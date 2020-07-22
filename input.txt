@@ -1,0 +1,17 @@
+const mHouse = 99;
+var pro, b, c, p;
+begin
+	b:=3;
+	c:=3;
+	p:=(c/b);
+	pro:=c+b;
+	b:=mHouse + 5;
+	while c<4
+	do 
+	c := c + 1;
+	
+	if c = 4
+	then
+	pro:=39;
+	
+end.
