@@ -44,7 +44,7 @@ void factor();
 void condition();
 int countTokens();
 void getToken();
-int checkTable(struct token token);
+int checkTable(struct token token, int kind);
 void markVar( struct token token );
 void block();
 void printSymbolTable();
@@ -99,19 +99,26 @@ void getToken()
     }
 }
 // searches if an identifier is in the symbol table already, returns index if match found
-int checkTable(struct token token)
+int checkTable(struct token token, int kind)
 {
     if (sizeOfSymbolTable == 1)
         return 0; // there isn't even anything in the table yet
-    for (int i = sizeOfSymbolTable ; i > 0 ; i-- )
-    {
-        if ( strcmp(token.name, symbolTable[i].name) == 0 ) // if a match is found
-        {
-            //printf("the search function thinks the %dth identifier in the table is %s based on the token of %s\n", i, symbolTable[i].name, token.name);
 
-            return i;
-        }
+    if (kind == 2) // if var
+    {
+        printf("kind var\n");
+        for (int i = sizeOfSymbolTable ; i > 0 ; i-- )
+            if ( strcmp(token.name, symbolTable[i].name) == 0 && symbolTable[i].level <= currLevel ) // if a match is found
+                return i;
     }
+    else // if const or proc
+    {
+        printf("kind const or proc\n");
+       for (int i = sizeOfSymbolTable ; i > 0 ; i-- )
+            if ( strcmp(token.name, symbolTable[i].name) == 0 ) // if a match is found
+                return i;
+    }
+
     return 0; // no match has been found
 }
 
@@ -151,7 +158,7 @@ void insertNewSymbol(struct token token, int kind)
 // instead of "deleting" things from the table, we mark them
 void markVar( struct token token )
 {
-    int index = checkTable( token );
+    int index = checkTable( token, 2 );
     if ( index == 0 )
         error(12); //undeclared identifier
     else
@@ -295,7 +302,7 @@ void block()
 
             // checkTable will take in the current token and check it against the symbol table, returns index if it is found,
             // returns 0 if no match found
-            if ( checkTable(currToken) != 0 )
+            if ( checkTable(currToken, 1) != 0 )
             {
                  error(27); // duplicate identifier name
             }
@@ -361,7 +368,7 @@ void block()
                 error(5); // const, var, -procedure- must be followed by identifier
             }
             // if it is an identifier, we check if one such exists in the symbol table already
-            if ( checkTable(currToken) != 0 )
+            if ( checkTable(currToken, 2) != 0 )
             {
                 error(27); // duplicate identifier name
             }
@@ -417,15 +424,17 @@ void statement()
             //printf("in identsym (in statement) %s\n", currToken.name);
 
             // check if the identifier has been declared already
-            checkedTableIndex = checkTable(currToken);
-            if (checkedTableIndex == 0) // if checkTable returned a 0, if so, then the identifier doesn't exist
+            checkedTableIndex = checkTable(currToken, 2);
+            if (checkedTableIndex == 0) // if checkTable returned a 0, if so, then the identifier doesn't exist (as a variable at least)
             {
+                checkedTableIndex = checkTable(currToken, 1);
+                if (checkedTableIndex == 0)
+                    error(13); // Assignment to constant or procedure is not allowed.
+                checkedTableIndex = checkTable(currToken, 3);
+                if (checkedTableIndex == 0)
+                    error(13); // Assignment to constant or procedure is not allowed.
+
                 error(5); //"const, var, -procedure- must be followed by identifier"
-            }
-            // cannot update the contents of a constant (kind=1) or a procedure (kind=3)
-            if ( symbolTable[checkedTableIndex].kind == 1 || symbolTable[checkedTableIndex].kind == 3 )
-            {
-                error(13); // Assignment to constant or procedure is not allowed.
             }
 
             // the identifier exists, we can move on
@@ -542,11 +551,16 @@ void statement()
                 error(28); // "read must be followed by identifier"
             }
 
-            checkedTableIndex = checkTable(currToken);
-            // check if the identifier exists a a const or as a var
-            if ( checkedTableIndex == 0)
+            checkedTableIndex = checkTable(currToken, 1); // check constant first
+            if ( checkedTableIndex == 0) // if not constant
             {
-                error(12); // "undeclared identifier!"
+                checkedTableIndex = checkTable(currToken, 2);
+
+                if ( checkedTableIndex == 0) // if also not variable
+                {
+                    error(12); // "undeclared identifier!"
+                }
+
             }
 
             // read emit
@@ -569,14 +583,18 @@ void statement()
             }
 
             // check if the identifier exists
-            checkedTableIndex = checkTable(currToken);
+            checkedTableIndex = checkTable(currToken, 1); // check if const first
             if (checkedTableIndex == 0)
             {
-                error(12); // "undeclared identifier!"
+                checkedTableIndex = checkTable(currToken, 2); // check if var
+                if (checkedTableIndex == 0) //if neither
+                {
+                    error(12); // "undeclared identifier!"
+                }
             }
 
-            // checks if a const identifier with this name exists
-            if (symbolTable[checkedTableIndex].kind == 1) // if it is indeed a const
+
+            if (symbolTable[checkedTableIndex].kind == 1) // if it is a const, use LIT
             {
                 emit(LIT, 0, currToken.value); // then we can emit it as a literal
             }
@@ -617,7 +635,7 @@ void expression() // expression are ["+" | "-"] term() {("+" | "-") term()}.
 {
     //printf("in expression\n");
     int storeSign = plussym; // you probably don't need to initialize this but I am just in case
-    int checkedSymbolTable; // stores the result of checkTable()
+    int checkedTableIndex; // stores the result of checkTable()
 
     if (currToken.ID == plussym || currToken.ID == minussym) // "does this expression have that optional + or - at the beginning?"
     {
@@ -636,26 +654,37 @@ void expression() // expression are ["+" | "-"] term() {("+" | "-") term()}.
     //printf("this print statement is right before it checks if there is a plus or minus. the third time this shows up the current ID should be 4 for plussym.......    currToken.ID: %d\n", currToken.ID);
     while (currToken.ID == plussym || currToken.ID == minussym)
     {
-        //getToken();
         // if the next term is an identifier
         if (currToken.ID == identsym)
         {
-            // does it exist
-            checkedSymbolTable = checkTable(currToken);
-            if (checkedSymbolTable == 0)
+            // does it exist?
+            checkedTableIndex = checkTable(currToken, 1); // first check as a const
+            if (checkedTableIndex == 0)
             {
-                error(12); //undeclared identifier
+                checkedTableIndex = checkTable(currToken, 2); // check as a var
+
+                if(checkedTableIndex == 0)
+                {
+                    error(12); //undeclared identifier
+                }
+
             }
-            // we could check for kind here but there will never be a kind 3 so, moving on
+
+            // we not allowed to have procedures here!
+            int isItAProc = checkTable(currToken, 3);
+            if (isItAProc == 0)
+            {
+                error(22); // expression cannot have procedure
+            }
 
             // if it is a const we emit LIT, if it's var we emit LOD
-            if (symbolTable[checkedSymbolTable].kind == 1)
+            if (symbolTable[checkedTableIndex].kind == 1)
             {
-                emit(LIT, 0, symbolTable[checkedSymbolTable].value);
+                emit(LIT, 0, symbolTable[checkedTableIndex].value);
             }
             else
             {
-                emit(LOD, 0, symbolTable[checkedSymbolTable].address);
+                emit(LOD, 0, symbolTable[checkedTableIndex].address);
             }
 
             // move on
@@ -712,9 +741,23 @@ void factor() // ident | number | "(" expression ")"
         case identsym:
             //printf("in identsym (in factor) %s\n", currToken.name);
 
-            checkedTableIndex = checkTable(currToken);
-            if (checkedTableIndex == 0) // if a variable identifier with that name doesn't exist, error
-                error(12); // "Undeclared identifier"
+            checkedTableIndex = checkTable(currToken, 1); // check as a const first
+            if (checkedTableIndex == 0) // if not const, check var
+            {
+                checkedTableIndex = checkTable(currToken, 2);
+                if (checkedTableIndex == 0)
+                {
+                    error(12); // "Undeclared identifier"
+                }
+
+            }
+
+            // we not allowed to have procedures here
+            int isItAProc = checkTable(currToken, 3);
+            if (isItAProc == 0)
+            {
+                error(22); // expression cannot have procedure
+            }
 
             if (symbolTable[checkedTableIndex].kind == 2) // if it's a variable
             {
@@ -888,8 +931,8 @@ int main(int argc, char **argv)
     int l = 0, a=0;
     // v is declared as a global in vm.h
 
-
-     if (argc<2)
+    /*
+    if (argc<2)
     {
         printf("error : please include file name\n");
     }
@@ -939,12 +982,13 @@ int main(int argc, char **argv)
             l = 1;
         }
     }
+    */
 
-    /*
+
     a = 1;
     v=1;
     l =1;
-    */
+
 
     // step 1: HW2
     lex();

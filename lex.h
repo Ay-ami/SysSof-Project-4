@@ -48,7 +48,6 @@ struct token{
     char name[MAX_ID_LENGTH];
 }token;
 struct token tokenStorage[500];
-int globalTestFire = 3;
 // opens the file
 
 FILE *openFile(char fileName[], char mode[], FILE *fp)
