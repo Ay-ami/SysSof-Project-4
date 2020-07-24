@@ -108,14 +108,14 @@ int checkTable(struct token token, int kind)
     {
         printf("kind var\n");
         for (int i = sizeOfSymbolTable ; i > 0 ; i-- )
-            if ( strcmp(token.name, symbolTable[i].name) == 0 && symbolTable[i].level <= currLevel ) // if a match is found
+            if ( strcmp(token.name, symbolTable[i].name) == 0 && symbolTable[i].level <= currLevel && symbolTable[i].mark == 0) // if a match is found
                 return i;
     }
     else // if const or proc
     {
         printf("kind const or proc\n");
        for (int i = sizeOfSymbolTable ; i > 0 ; i-- )
-            if ( strcmp(token.name, symbolTable[i].name) == 0 ) // if a match is found
+            if ( strcmp(token.name, symbolTable[i].name) == 0 && symbolTable[i].mark == 0) // if a match is found
                 return i;
     }
 
@@ -402,7 +402,6 @@ void block()
     emit(INC, 0, 4 + numVars);// TA: "emit(INC, , 4+numVars")
 
     statement();
-    //getToken();
     //printf("end of block statement\n");
 }
 
@@ -476,7 +475,6 @@ void statement()
                 error(9); // all these statements must eventually end with "end"
                           // "Incorrect symbol after statement part in block"
             }
-            //getToken();
             break;
 
         case ifsym:
@@ -794,7 +792,6 @@ void factor() // ident | number | "(" expression ")"
             error(1); // oh oh it's not an identifier, number, or an expression enclosed in parenthesis
             break;
     }
-    //getToken();
 
 }
 
