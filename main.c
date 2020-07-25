@@ -32,6 +32,8 @@ int currAddress=3; // addresses here start at 4 in this project because we have 
 int sizeOfSymbolTable = 1; // size of the symbol table currently, not the max size that's gonna be like 100 or something
                            // it starts at 1 because symbolTable starts at 1, if we ever hit symbolTable[0] that means there
                            // is no match when we search
+int procLevel = 0; // procedure level
+
 struct symbol symbolTable [100];
 
 // really only prototyping them so that the warnings go shhhhhh
@@ -67,9 +69,6 @@ void emit(int op, int level, int address)
     }
     //printf(" emit ( %d, %d, %d )  \n", op, level, address);
 }
-//---->end of stuff for code generation part of the project<----//
-
-
 int numTokens; //probably need to run the token struct through a function that does counter++ until it hits ID=0 to get this number
 int tokenIndex = 0; // this is the index for the token struct
 //struct token tokens[100]; //100 for now... changed all referances to "token" to "tokenStorage" from lex.h
@@ -121,7 +120,6 @@ int checkTable(struct token token, int kind)
 
     return 0; // no match has been found
 }
-
 void insertNewSymbol(struct token token, int kind)
 {
     /*int kind; 		// const = 1, var = 2, proc = 3
@@ -134,7 +132,7 @@ void insertNewSymbol(struct token token, int kind)
     symbolTable[sizeOfSymbolTable].kind = kind;
     strcpy( symbolTable[sizeOfSymbolTable].name, token.name );
     symbolTable[sizeOfSymbolTable].value = -1; // -1 is only a defult value, the actual value gets added separately (const only!)
-    symbolTable[sizeOfSymbolTable].level = currLevel; //pretty much always 0 so who cares
+    symbolTable[sizeOfSymbolTable].level = procLevel;
     symbolTable[sizeOfSymbolTable].mark = 0;
 
     if (kind == 2)
@@ -275,10 +273,11 @@ void error(int errorType) // this should probably be the last thing we fill out
     }
     exit(0);
 }
+
 void block()
 {
     // for some reason block increases current level
-    //currLevel++;
+    currLevel++;
 
     //printf("in block\n");
     // all the inputs from HW1 start with Jump to instruction 0
@@ -397,6 +396,7 @@ void block()
         // if it does end in a semicolon, we can move on
         getToken();
     }//end of varsym
+
 
     // after const and vars, we increment the stack pointer depending on how many vars we put i think?
     emit(INC, 0, 4 + numVars);// TA: "emit(INC, , 4+numVars")
@@ -994,9 +994,13 @@ int main(int argc, char **argv)
     numTokens = countTokens(); // this is so we know how big the lexeme list is
     getToken();
 
-    block();
+    //emit (JMP, 0, 0); // main's jump
+    // count how many procs you have
+    // emit JMP M = 0 for every procedure
+    block(); // block(0)
+    // fix main JMP
+    //
 
-    //printCodeArray(); // shows the instructions we have generated, this was only useful when we didn't have vm.h
 
     //HW1
     vm(); // vm does its own printing
