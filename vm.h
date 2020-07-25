@@ -386,7 +386,7 @@ int vm()
           //SIO Print stack
           case 9:
               //printf("case %s\n", interpertOP(IR.OP));
-            //printf("%i\n", stack[SP]);
+            printf("%d\n", stack[SP]);
             SP++;
           break;
 
