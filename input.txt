@@ -1,17 +1,26 @@
-const mHouse = 99;
-var pro, b, c, p;
+const c = 12;
+var x, squ;
+/*a comment*/
+procedure square;
 begin
-	b:=3;
-	c:=3;
-	p:=(c/b);
-	pro:=c+b;
-	b:=mHouse + 5;
-	while c<4
-	do 
-	c := c + 1;
-	
-	if c = 4
-	then
-	pro:=39;
-	
+	squ:= x * x;
+end;
+
+begin
+	x := 1;
+	while x <= 10 do
+		begin
+			call square;
+			x := x + 1;
+			write squ;
+
+		end;
+    
+    if x > 1
+    then
+    x := 0;
+    else
+    x:=11;
+    
+x := 44;
 end.
