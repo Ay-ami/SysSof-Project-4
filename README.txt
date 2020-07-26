@@ -4,4 +4,5 @@ No matter what though, the program will always create an output.txt to show the 
 Included is a good test case and a bad test case with an error. 
 Note:
 -All flags default to printing only to output.txt
--Code defaults to running local input.txt if it can not find filename from the command line     
+-Code defaults to running local input.txt if it can not find filename from the command line  
+-zip file should also contain all runs where the code has caught errors and has comments on what the error was and should be expected
