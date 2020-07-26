@@ -1,0 +1,90 @@
+
+var x, squ;
+
+procedure square;
+begin
+	squ:= x * x;
+end;
+
+begin
+	x := 1;
+	while x <= 10 do
+		begin
+			call square;
+			x := x + 1;
+			write squ;
+
+		end;
+
+    if x > 
+    then
+    x := 0;
+    else
+    x := 42;
+
+end.
+
+Lexeme Table: 
+lexeme 		 token type
+var               29
+x                  2
+,                 17
+squ                2
+;                 18
+procedure         30
+square             2
+;                 18
+begin             21
+squ                2
+:=                20
+x                  2
+*                  6
+x                  2
+;                 18
+end               22
+;                 18
+begin             21
+x                  2
+:=                20
+1                  3
+;                 18
+while             25
+x                  2
+<=                12
+10                 3
+do                26
+begin             21
+call              27
+square             2
+;                 18
+x                  2
+:=                20
+x                  2
++                  4
+1                  3
+;                 18
+write             31
+squ                2
+;                 18
+end               22
+;                 18
+if                23
+x                  2
+>                 13
+then              24
+x                  2
+:=                20
+0                  3
+;                 18
+else              33
+x                  2
+:=                20
+42                 3
+;                 18
+end               22
+.                 19
+
+
+Lexeme List
+29  2 x  17  2 squ  18  30  2 square  18  21  2 squ  20  2 x  6  2 x  18  22  18  21  2 x  20  3  18  25  2 x  12  3  26  21  27  2 square  18  2 x  20  2 x  4  3  18  31  2 squ  18  22  18  23  2 x  13  24  2 x  20  3  18  33  2 x  20  3  18  22  19   
+incorrect or missing symbol in factor 
