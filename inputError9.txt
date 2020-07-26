@@ -1,0 +1,26 @@
+/*x must be followed by equal sign*/
+var x, squ;
+
+procedure square;
+begin
+	squ:= x * x;
+end;
+
+begin
+	x + 1; /*this x*/
+	while x <= 10 do
+		begin
+			call square;
+			x := x + 1;
+			write squ;
+
+		end;
+
+    if x > 1
+    then
+    x := 0;
+    else
+    x:=11;
+    
+x := 44;
+end.
