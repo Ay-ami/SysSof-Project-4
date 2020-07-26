@@ -1,16 +1,19 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include "lex.h"
 #include "vm.h"
+
+#define MAX_LEVEL 5
 // HW2 ->  HW3  ->  HW1
 // LEX    parser    VM  ?
 // this might need another step somewhere
 
 // COP 3402
-// Project 3- Parse Codegen
-// Due 7/14/2020
+// Project 4- Parse Codegen Part 2
+// Due 7/25/2020
 // Victor Torres
 // Maya Awad
 
@@ -32,9 +35,13 @@ int currAddress=3; // addresses here start at 4 in this project because we have 
 int sizeOfSymbolTable = 1; // size of the symbol table currently, not the max size that's gonna be like 100 or something
                            // it starts at 1 because symbolTable starts at 1, if we ever hit symbolTable[0] that means there
                            // is no match when we search
-int procLevel = 0; // procedure level
+int procLevel = 0; // procedure level 
 
 struct symbol symbolTable [100];
+int stackIndexArray[MAX_LEVEL]; //stack_indices
+int stackIndex = 0; //stack_index
+int jumpAddresses[MAX_LEVEL]; 
+
 
 // really only prototyping them so that the warnings go shhhhhh
 void emit(int op, int level, int address);
@@ -50,8 +57,156 @@ int checkTable(struct token token, int kind);
 void markVar( struct token token );
 void block();
 void printSymbolTable();
+void printSymbolTableCons();
 
-
+void error(int errorType) 
+{
+    FILE *fpw = openFile("output.txt", "a", fpw);
+    fprintf(fpw, " \n");
+    switch (errorType)
+    {
+        case 1:
+            printf("error 1 there was an error\n");
+            fprintf(fpw, "error 1 there was an error \n");
+            break;
+        case 2:
+            printf("Use = instead of :=\n");
+            fprintf(fpw, "Use = instead of :=\n");
+            break;
+        case 3:
+            printf("= must be followed by a number.\n");
+            fprintf(fpw, "= must be followed by a number.\n");
+            break;
+        case 4:
+            printf("Identifier must be followed by =\n");
+            fprintf(fpw, "Identifier must be followed by =\n");
+            break;
+        case 5:
+            printf("const, var, -procedure- must be followed by identifier.\n");
+            fprintf(fpw, "const, var, -procedure- must be followed by identifier\n");
+            break;
+        case 6:
+            printf("Semicolon or comma missing\n");
+            fprintf(fpw, "Semicolon or comma missing\n");
+            break;
+        case 7:
+            printf("Incorrect symbol after procedure declaration\n");
+            fprintf(fpw, "Incorrect symbol after procedure declaration\n");
+            break;
+        case 8:
+            printf("Statement expected\n");
+            fprintf(fpw, "Statement expected\n");
+            break;
+        case 9:
+            printf("Incorrect symbol after statement part in block\n");
+            fprintf(fpw, "Incorrect symbol after statement part in block\n");
+            break;
+        case 10:
+            printf("Period expected\n");
+            fprintf(fpw, "Period expected\n");
+            break;
+        case 11:
+            printf("Semicolon between statements missing.\n");
+            fprintf(fpw, "Semicolon between statements missing\n");
+            break;
+        case 12:
+            printf("Undeclared identifier.\n");
+            fprintf(fpw, "Undeclared identifier\n");
+            break;
+        case 13:
+            printf("Assignment to constant or procedure is not allowed.\n");
+            fprintf(fpw, "Assignment to constant or procedure is not allowed.\n");
+            break;
+        case 14:
+            printf("Assignment operator expected.\n");
+            fprintf(fpw, "Assignment operator expected\n");
+            break;
+        case 15:
+            printf("call must be followed by an identifier.\n");
+            fprintf(fpw, "call must be followed by an identifier.\n");
+            break;
+        case 16:
+            printf("Call of a constant or variable is meaningless.\n");
+            fprintf(fpw, "Call of a constant or variable is meaningless.\n");
+            break;
+        case 17:
+            printf(" 'then' expected.\n");
+            fprintf(fpw, " 'then' expected.\n");
+            break;
+        case 18:
+            printf("Semicolon or end expected.\n");
+            fprintf(fpw, "Semicolon or end expected.\n");
+            break;
+        case 19:
+            printf("do expected.\n");
+            fprintf(fpw, "do expected.\n");
+            break;
+        case 20:
+            printf("Incorrect symbol following statement.\n");
+            fprintf(fpw, "Incorrect symbol following statement.\n");
+            break;
+        case 21:
+            printf("Relational operator expected.\n");
+            fprintf(fpw, "Relational operator expected.\n");
+            break;
+        case 22:
+            printf("Expression must not contain a procedure identifier.\n");
+            fprintf(fpw, "Expression must not contain a procedure identifier.\n");
+            break;
+        case 23:
+            printf("Right parenthesis missing.\n");
+            fprintf(fpw, "Right parenthesis missing.\n");
+            break;
+        case 24:
+            printf("The preceding factor cannot begin with this symbol.\n");
+            fprintf(fpw, "The preceding factor cannot begin with this symbol.\n");
+            break;
+        case 25:
+            printf("An expression cannot begin with this symbol.\n");
+            fprintf(fpw, "An expression cannot begin with this symbol\n");
+            break;
+        case 26:
+            printf("This number is too large.\n");
+            fprintf(fpw, "This number is too large\n");
+            break;
+        case 27:
+            printf("duplicate identifier name\n");
+            fprintf(fpw, "duplicate identifier name\n");
+            break;
+        case 28:
+            printf("read must be followed by identifier\n");
+            fprintf(fpw, "read must be followed by identifier\n");
+            break;
+        case 29:
+            printf("write must be followed by identifier\n");
+            fprintf(fpw, "write must be followed by identifier\n");
+            break;
+        case 30:
+            printf("there are no more tokens to read\n");
+            fprintf(fpw, "there are no more tokens to read\n");
+            break;
+        case 31:
+            printf("cannot declare and initialize a var at the same time\n");
+            fprintf(fpw, "cannot declare and initialize a var at the same time\n");
+            break;
+        case 32:
+            printf("use := instead of =\n");
+            fprintf(fpw, "use := instead of =\n");
+            break;
+        case 33: 
+            printf("expected + or -\n");
+            fprintf(fpw, "expected + or \n");
+            break;
+        case 34:
+            printf("incorrect or missing symbol in factor \n");
+            fprintf(fpw, "incorrect or missing symbol in factor \n");
+            break;
+        default:
+            printf("default error\n");
+            break;
+    }
+    exit(0);
+}
 
 void emit(int op, int level, int address)
 {
@@ -65,7 +220,12 @@ void emit(int op, int level, int address)
         Code[currentCodeIndex].L = level;
         Code[currentCodeIndex].M = address;
 
+        stackIndex++;
         currentCodeIndex++;
+
+    }
+    if(op == 4){
+      stackIndex-=1;
     }
     //printf(" emit ( %d, %d, %d )  \n", op, level, address);
 }
@@ -87,7 +247,7 @@ void getToken()
 {
     //printf("  getToken() %d\n", currToken.ID);
     if ( tokenIndex == numTokens )
-        error(30); // no more tokens to get
+        error(10); // no more tokens to get, the end should have a period
     else
     {
         currToken.ID = tokenStorage[tokenIndex].ID;
@@ -105,16 +265,16 @@ int checkTable(struct token token, int kind)
 
     if (kind == 2) // if var
     {
-        printf("kind var\n");
+        //printf("kind var\n");
         for (int i = sizeOfSymbolTable ; i > 0 ; i-- )
-            if ( strcmp(token.name, symbolTable[i].name) == 0 && symbolTable[i].level <= currLevel && symbolTable[i].mark == 0) // if a match is found
+            if ( strcmp(token.name, symbolTable[i].name) == 0 && symbolTable[i].level <= currLevel && symbolTable[i].mark == 0 && symbolTable[i].kind == kind) // if a match is found
                 return i;
     }
     else // if const or proc
     {
-        printf("kind const or proc\n");
+        //printf("kind const or proc\n");
        for (int i = sizeOfSymbolTable ; i > 0 ; i-- )
-            if ( strcmp(token.name, symbolTable[i].name) == 0 && symbolTable[i].mark == 0) // if a match is found
+            if ( strcmp(token.name, symbolTable[i].name) == 0 && symbolTable[i].mark == 0 && symbolTable[i].kind == kind) // if a match is found
                 return i;
     }
 
@@ -139,10 +299,6 @@ void insertNewSymbol(struct token token, int kind)
     {
         currAddress++;
         symbolTable[sizeOfSymbolTable].address = currAddress;
-                                                              // the reason we don't just start currAddress at 4 is because if we need to access
-                                                            // it somewhere else outside of this function it might be 1 address ahead
-        //printf("  the inserted var's adress is: %d\n", symbolTable[sizeOfSymbolTable].address);
-        //printf("  current address of symbol table is now: %d\n", currAddress);
     }
     else
     {
@@ -165,126 +321,35 @@ void markVar( struct token token )
     }
 
 }
-void error(int errorType) // this should probably be the last thing we fill out
+
+void program()
 {
-    switch (errorType)
-    {
-        case 1:
-            printf("error 1 there was an error\n");
-            break;
-        case 2:
-            printf("Use = instead of :=\n");
-            break;
-        case 3:
-            printf("= must be followed by a number.\n");
-            break;
-        case 4:
-            printf("Identifier must be followed by =\n");
-            break;
-        case 5:
-            printf("const, var, -procedure- must be followed by identifier.\n");
-            break;
-        case 6:
-            printf("Semicolon or comma missing\n");
-            break;
-        case 7:
-            printf("Incorrect symbol after procedure declaration\n");
-            break;
-        case 8:
-            printf("Statement expected\n");
-            break;
-        case 9:
-            printf("Incorrect symbol after statement part in block\n");
-            break;
-        case 10:
-            printf("Period expected\n");
-            break;
-        case 11:
-            printf("Semicolon between statements missing.\n");
-            break;
-        case 12:
-            printf("Undeclared identifier.\n");
-            break;
-        case 13:
-            printf("Assignment to constant or procedure is not allowed.\n");
-            break;
-        case 14:
-            printf("Assignment operator expected.\n");
-            break;
-        case 15:
-            printf("call must be followed by an identifier.\n");
-            break;
-        case 16:
-            printf("Call of a constant or variable is meaningless.\n");
-            break;
-        case 17:
-            printf("then	 expected.\n");
-            break;
-        case 18:
-            printf("Semicolon or end expected.\n");
-            break;
-        case 19:
-            printf("do expected.\n");
-            break;
-        case 20:
-            printf("Incorrect symbol following statement.\n");
-            break;
-        case 21:
-            printf("Relational operator expected.\n");
-            break;
-        case 22:
-            printf("Expression must not contain a procedure identifier.\n");
-            break;
-        case 23:
-            printf("Right parenthesis missing.\n");
-            break;
-        case 24:
-            printf("The preceding factor cannot begin with this symbol.\n");
-            break;
-        case 25:
-            printf("An expression cannot begin with this symbol.\n");
-            break;
-        case 26:
-            printf("This number is too large.\n");
-            break;
-        case 27:
-            printf("duplicate identifier name\n");
-            break;
-        case 28:
-            printf("read must be followed by identifier\n");
-            break;
-        case 29:
-            printf("write must be followed by identifier\n");
-            break;
-        case 30:
-            printf("there are no more tokens to read\n");
-            break;
-        case 31:
-            printf("cannot declare and initialize a var at the same time\n");
-            break;
-        case 32:
-            printf("use := instead of =\n");
-            break;
-        case 33: printf("expected + or -\n");
-            break;
-        default:
-            printf("default error\n");
-            break;
-    }
-    exit(0);
+  getToken();
+  block();
+
+  if (currToken.ID != periodsym)
+  {
+    error(10); // expected a period
+  }
+  if (currToken.ID == periodsym) // yay! the end
+  {
+    emit(SIO3, 0, 3); // emit halt
+  }
 }
 
 void block()
 {
     // for some reason block increases current level
     currLevel++;
-
+    jumpAddresses[currLevel] = currentCodeIndex;
+    int reserved = 4;
     //printf("in block\n");
     // all the inputs from HW1 start with Jump to instruction 0
-    emit(JMP, 0, 1);
+    emit(JMP, 0, 0);
 
     // TA says "keep track of the number of variables"
     int numVars = 0;
+    int numSym = 0;
 
     if ( currToken.ID == constsym )// check for a constant declaration
     {
@@ -303,19 +368,21 @@ void block()
             // returns 0 if no match found
             if ( checkTable(currToken, 1) != 0 )
             {
-                 error(27); // duplicate identifier name
+               if ( symbolTable[ checkTable(currToken, 1) ].mark == 0 )
+                 {
+                  printf("unmarked\n");
+                  error(27); // duplicate identifier name
+                }
             }
             else
             {
                 // this is a new identifier!
-                /* this block is all handled by insertNewSymbol()
                 strcpy( symbolTable[sizeOfSymbolTable].name, currToken.name );
                 symbolTable[sizeOfSymbolTable].kind = 1; // (kind 1 = const)
                 symbolTable[sizeOfSymbolTable].level = 0;
                 symbolTable[sizeOfSymbolTable].mark = 0;
-                symbolTable[sizeOfSymbolTable].address = 0;
-                */
-                insertNewSymbol(currToken, 1);
+                symbolTable[sizeOfSymbolTable].address = numSym;
+                //insertNewSymbol(currToken, 1);
             }
 
             // ok now that the table knows the name of this identifier, we update token again
@@ -340,7 +407,7 @@ void block()
 
             // we can just go ahead and officially say the symbol table is bigger
              sizeOfSymbolTable++;
-
+            numSym++;
 
             // ok, next token
             getToken();
@@ -357,6 +424,8 @@ void block()
 
     if ( currToken.ID == varsym ) // check for a variable declaration
     {
+      numVars = 0;
+      int varAddr = 4 + (stackIndex-1);
         //printf("in varsym\n");
         do
         {
@@ -369,14 +438,30 @@ void block()
             // if it is an identifier, we check if one such exists in the symbol table already
             if ( checkTable(currToken, 2) != 0 )
             {
-                error(27); // duplicate identifier name
+                if ( symbolTable[ checkTable(currToken, 2) ].mark == 0 )
+                 {
+                  printf("unmarked\n");
+                  error(27); // duplicate identifier name
+                }
             }
+
+            
             // if no variable with that name exists, we add it to the table:
 
-            insertNewSymbol(currToken, 2);
+            symbolTable[sizeOfSymbolTable].kind = 2;
+            symbolTable[sizeOfSymbolTable].level = procLevel;
+            symbolTable[sizeOfSymbolTable].address = varAddr;
+            strcpy(symbolTable[sizeOfSymbolTable].name, currToken.name);
+            symbolTable[sizeOfSymbolTable].mark = 0;
             // we can officially grow the symbol table
             sizeOfSymbolTable++;
+            varAddr++;
+            numVars++;
+            numSym++;
+            
+            reserved += numVars;
 
+            stackIndex += numVars;
             // we can move on
             getToken();
             // also we cannot have a = after the identifier because we do not declare and initialize variables at the same time
@@ -384,9 +469,6 @@ void block()
             {
                 error(31);// cannot initialize var at this time
             }
-
-            // we can increment the number of variables now
-            numVars++;
         }
         while (currToken.ID == commasym);// similarly to above, there could be multiple variables declared
         if ( currToken.ID != semicolonsym )// variable declarations *have* to end with a semicolon
@@ -397,17 +479,91 @@ void block()
         getToken();
     }//end of varsym
 
+  while (currToken.ID == procsym)
+  {
+   // printf("in procsym\n");
+    int checkedTableIndex;
+    stackIndexArray[currLevel] = stackIndex;
+    stackIndex = 0;
+    getToken();
 
-    // after const and vars, we increment the stack pointer depending on how many vars we put i think?
-    emit(INC, 0, 4 + numVars);// TA: "emit(INC, , 4+numVars")
+    if(currToken.ID != identsym){
+      error(5); //must be followed by identifier
+    }
 
+    checkedTableIndex = checkTable(currToken, 3);
+
+    if (checkedTableIndex != 0) // if there is already a procedure with this name// could reverse this
+    {
+      if ( symbolTable[ checkTable(currToken, 3) ].mark == 0 )
+      {
+        //printf("unmarked\n");
+        error(27); // duplicate identifier name
+      }
+    }
+    symbolTable[sizeOfSymbolTable].kind = 3;
+    symbolTable[sizeOfSymbolTable].level = procLevel;
+    symbolTable[sizeOfSymbolTable].address = currentCodeIndex;
+    symbolTable[sizeOfSymbolTable].mark = 0;
+    procLevel++;
+    strcpy(symbolTable[sizeOfSymbolTable].name, currToken.name);
+    sizeOfSymbolTable++;
+    numSym++;
+
+    getToken();
+
+    if(currToken.ID != semicolonsym){
+      error(6);
+    }
+
+    getToken();
+    //printf("calling block() from proc\n");
+    block();
+
+    if(currToken.ID!= semicolonsym){
+      //printf("token.ID: %d\n", currToken.ID);
+      error(6);
+    }
+
+    getToken();
+    procLevel--;
+    emit(OPR, 0, 0);
+    
+  } // end of proc
+  //printf("exited proc\n");
+
+  reserved = 4 + numVars;
+  Code[jumpAddresses[currLevel]].M = currentCodeIndex;
+
+    emit(INC, 0, reserved);// TA: "emit(INC, , 4+numVars")
+
+    currLevel--;
+
+    stackIndex = stackIndexArray[currLevel];
+
+    //printf("entering statement at end of block()\n");
     statement();
-    //printf("end of block statement\n");
+
+    // mark the last n unmarked symbols
+    int i = 1;
+    while ( i <= numSym )
+    {
+      //printf("i = %d\n", i);
+       if (symbolTable[sizeOfSymbolTable - i].mark != 1)
+       {
+         //printf("inside the thing\n");
+         symbolTable[sizeOfSymbolTable - i].mark = 1;
+         i++;
+       } 
+    }
+
+    //printf("end of block\n");
 }
 
 void statement()
 {
     //printf("in statement\n");
+    
 
     // here we use a switch statement instead of a bunch of if statements because the grammar
     // separates types of statements with an OR symbol ("|"). Unlike block() which can enter
@@ -418,13 +574,35 @@ void statement()
 
     switch (ID)
     {
+        case callsym:
+        getToken();
+        stackIndexArray[currLevel] = stackIndex;
+        stackIndex = 0;
+
+        if(currToken.ID != identsym){
+          error(15);
+        }
+
+        checkedTableIndex = checkTable(currToken, 3);
+        if (checkedTableIndex == 0)
+        {
+          error(12); // undelclared identifier
+        }
+
+        emit(CAL, currLevel - symbolTable[currentCodeIndex].level, symbolTable[checkedTableIndex].address);
+
+        getToken();
+          break;
+
         case identsym:; // this semicolon is here because the immediate next line is a declaration which makes it funky for some reason
             // if it is an identifier symbol, check if one with this name exists
-            //printf("in identsym (in statement) %s\n", currToken.name);
+           // printf("in identsym (in statement) %s\n", currToken.name);
 
+
+        
             // check if the identifier has been declared already
             checkedTableIndex = checkTable(currToken, 2);
-            if (checkedTableIndex == 0) // if checkTable returned a 0, if so, then the identifier doesn't exist (as a variable at least)
+            if (checkedTableIndex == 0) // identifier doesn't exist (as a variable at least)
             {
                 checkedTableIndex = checkTable(currToken, 1);
                 if (checkedTableIndex == 0)
@@ -433,7 +611,7 @@ void statement()
                 if (checkedTableIndex == 0)
                     error(13); // Assignment to constant or procedure is not allowed.
 
-                error(5); //"const, var, -procedure- must be followed by identifier"
+                error(12); //"const, var, -procedure- must be followed by identifier"
             }
 
             // the identifier exists, we can move on
@@ -457,12 +635,13 @@ void statement()
             // the following *must* be an expression
             expression();
 
-            emit(STO, 0, symbolTable[checkedTableIndex].address);
+            emit(STO, currLevel - symbolTable[checkedTableIndex].level, symbolTable[checkedTableIndex].address);
 
             break;
 
         case beginsym: // if "begin"
-            //printf("in beginsym\n");
+           // printf("in beginsym\n");
+
             do
             {
                 getToken();
@@ -470,11 +649,12 @@ void statement()
                 statement();
                 //printf("after the first statement() %d\n", currToken.ID);
             }while( currToken.ID == semicolonsym ); //we can have multiple statements in a row so long as they are separated by semicolons
-            if ( currToken.ID != periodsym )
+            if ( currToken.ID != endsym )
             {
                 error(9); // all these statements must eventually end with "end"
                           // "Incorrect symbol after statement part in block"
             }
+            getToken();
             break;
 
         case ifsym:
@@ -503,18 +683,21 @@ void statement()
 
             emit(JMP, 0, 0); // jump to instruction 0
 
-            // hmmmmmmm these ones are weird, you're supposed to do something with the saved indexes of course but
-            // is this it?
             Code[saveIndex1].M = currentCodeIndex;
 
+          getToken();
+          //printf("before elsesym: %d\n\n", currToken.ID);
             // we now have an else statement
             if (currToken.ID == elsesym)
             {
                 getToken();
                 statement();
             }
+            else{
+              statement();
+            }
             Code[saveIndex2].M = currentCodeIndex;
-
+            
             break;
 
         case whilesym:
@@ -563,7 +746,7 @@ void statement()
 
             // read emit
             emit(SIO2, 0, 2); // there are 3 STOs and they're basically seperated by their  M  so that's why there's just a 2 here
-            emit(STO, 0, symbolTable[checkedTableIndex].address); // i think this one's ok? again, L might not have to be 0
+            emit(STO, currLevel - symbolTable[checkedTableIndex].level, symbolTable[checkedTableIndex].address); 
 
             // move on
             getToken();
@@ -571,7 +754,7 @@ void statement()
             break;
 
         case writesym:
-            //printf("in writesym\n");
+           // printf("in writesym\n");
             getToken();
 
            // next token *must* be identsym
@@ -597,7 +780,7 @@ void statement()
                 emit(LIT, 0, currToken.value); // then we can emit it as a literal
             }
             else{ // or else it is a var not a cnost
-                emit(LOD, 0, symbolTable[checkedTableIndex].address); // maybe the L isnt really a 0 but eeeee
+                emit(LOD, currLevel - symbolTable[currentCodeIndex].level, symbolTable[checkedTableIndex].address); 
             }
             // STO1 is write
             emit(SIO1, 0, 1);
@@ -605,7 +788,7 @@ void statement()
             getToken();
 
             break;
-
+/*
         case endsym:
             //printf("in endsym\n");
             //printf("currtoken id: %d\n", currToken.ID);
@@ -624,6 +807,7 @@ void statement()
             if ( tokenIndex == numTokens )
                 error(10); // period expected
             break;
+            */
     }//end of switch
     //statement();
 
@@ -632,6 +816,7 @@ void statement()
 void expression() // expression are ["+" | "-"] term() {("+" | "-") term()}.
 {
     //printf("in expression\n");
+
     int storeSign = plussym; // you probably don't need to initialize this but I am just in case
     int checkedTableIndex; // stores the result of checkTable()
 
@@ -670,7 +855,7 @@ void expression() // expression are ["+" | "-"] term() {("+" | "-") term()}.
 
             // we not allowed to have procedures here!
             int isItAProc = checkTable(currToken, 3);
-            if (isItAProc == 0)
+            if (isItAProc != 0)
             {
                 error(22); // expression cannot have procedure
             }
@@ -682,7 +867,7 @@ void expression() // expression are ["+" | "-"] term() {("+" | "-") term()}.
             }
             else
             {
-                emit(LOD, 0, symbolTable[checkedTableIndex].address);
+                emit(LOD, currLevel - symbolTable[checkedTableIndex].level, symbolTable[checkedTableIndex].address);
             }
 
             // move on
@@ -705,7 +890,7 @@ void expression() // expression are ["+" | "-"] term() {("+" | "-") term()}.
 
 }
 
-void term()
+void term() //factor {("*"|"/") factor}.
 {
     //printf("in term\n");
     int saveType; // save if it was multiply or divide
@@ -752,18 +937,18 @@ void factor() // ident | number | "(" expression ")"
 
             // we not allowed to have procedures here
             int isItAProc = checkTable(currToken, 3);
-            if (isItAProc == 0)
+            if (isItAProc != 0)
             {
                 error(22); // expression cannot have procedure
             }
 
             if (symbolTable[checkedTableIndex].kind == 2) // if it's a variable
             {
-                emit(LOD, 0, symbolTable[checkedTableIndex].address); // assumes level is always 0, might have to fix this
+                emit(LOD, currLevel - symbolTable[checkedTableIndex].level, symbolTable[checkedTableIndex].address); 
             }
             if (symbolTable[checkedTableIndex].kind == 1) // if it's a constant
             {
-                emit(LIT, 0, symbolTable[checkedTableIndex].value); // assumes level is always 0, might have to fix this
+                emit(LIT, 0, symbolTable[checkedTableIndex].value); 
             }
             getToken();
             break;
@@ -777,6 +962,7 @@ void factor() // ident | number | "(" expression ")"
         case lparentsym: // this is the "(" expression ")" part
             //printf("in lparentsym\n");
             getToken();
+
             expression();
 
             // there *has* to be a closing parenthesis after the expression
@@ -788,8 +974,7 @@ void factor() // ident | number | "(" expression ")"
             break;
 
         default:
-            //printf("default switch in factor\n");
-            error(1); // oh oh it's not an identifier, number, or an expression enclosed in parenthesis
+            error(34); // oh oh it's not an identifier, number, or an expression enclosed in parenthesis
             break;
     }
 
@@ -797,10 +982,9 @@ void factor() // ident | number | "(" expression ")"
 
 void condition()
 {
-    //printf("in condition\n");
+    ////printf("in condition\n");
     if (currToken.ID == oddsym) // "odd" expression
     {
-        getToken();
         expression();
         //emit(ODD); // some sort of emit here
     }
@@ -861,6 +1045,7 @@ void printSymbolTable()
         fprintf(fpw, "\n");
 
     }
+    fprintf(fpw, "\n \n");
 }
 void printSymbolTableCons()
 {
@@ -895,8 +1080,10 @@ void printCodeArray()
 
 void printLexemeList()
 {
+  
     FILE *fpw = openFile("output.txt", "a", fpw);
     fprintf(fpw, "\n\nLexeme List\n");
+    fprintf(fpw, "\ninput is syntactically correct\n");
 
     for(int i = 0 ; tokenStorage[i].ID != 0 ; i++)
     {
@@ -925,14 +1112,13 @@ void printLexemeListCons()
 
 int main(int argc, char **argv)
 {
-    int l = 0, a=0;
-    // v is declared as a global in vm.h
-
-    /*
-    if (argc<2)
-    {
-        printf("error : please include file name\n");
-    }
+  // l = lexeme list
+  // v = stack trace, v is declared as a global in vm.h
+  // a = instruction tripplets
+    int l = 0;
+    int a = 0;
+       
+    
     if (argc == 5)
     {
         l = 1;
@@ -979,29 +1165,28 @@ int main(int argc, char **argv)
             l = 1;
         }
     }
-    */
+    
 
-
+    /*
     a = 1;
     v=1;
-    l =1;
-
-
-    // step 1: HW2
-    lex();
+    l =1;  
+    */
+  
+    // step 1: HW2     
+    if (argc<2) // if no name argument inputted, hadrcode 
+    {
+      lex("input.txt");
+    }
+    else{
+      lex(argv[1]);
+    }
 
     // HW3
     numTokens = countTokens(); // this is so we know how big the lexeme list is
-    getToken();
 
-    //emit (JMP, 0, 0); // main's jump
-    // count how many procs you have
-    // emit JMP M = 0 for every procedure
-    block(); // block(0)
-    // fix main JMP
-    //
-
-
+    program();
+   
     //HW1
     vm(); // vm does its own printing
 
@@ -1013,7 +1198,7 @@ int main(int argc, char **argv)
 
     if (a == 1)
     {
-        printf("assembly code \n");
+        //printf("assembly code \n");
         printCodeArray();
     }
 
@@ -1022,5 +1207,5 @@ int main(int argc, char **argv)
         printLexemeListCons();
     }
 
-
+  
 }
