@@ -16,7 +16,7 @@
 
 
 /*
-Based on Wirth’s definition for EBNF we have the following rule:
+Based on Wirthï¿½s definition for EBNF we have the following rule:
 [ ] means an optional item,
 { } means repeat 0 or more times.
 Terminal symbols are enclosed in quote marks.
@@ -235,14 +235,14 @@ void tokenizer(char *codeArr)
 
         case (int) 'e':
 
-          /*if(codeArr[i+1] == 'l' && codeArr[i+2] == 's' && codeArr[i+3] == 'e' && !(codeArr[i+4]>='a' && codeArr[i+4]<='z') && !(codeArr[i+4]>='A' && codeArr[i+4]<='Z')){
+          if(codeArr[i+1] == 'l' && codeArr[i+2] == 's' && codeArr[i+3] == 'e' && !(codeArr[i+4]>='a' && codeArr[i+4]<='z') && !(codeArr[i+4]>='A' && codeArr[i+4]<='Z')){
             i = i + 4;
             currToken.ID = elsesym;
             tokenStorage[j] = currToken;
             j++;
             continue;
           }
-          else */if(codeArr[i+1]=='n' && codeArr[i+2]=='d' && !(codeArr[i+3]>='a' && codeArr[i+3]<='z') && !(codeArr[i+3]>='A' && codeArr[i+3]<='Z'))
+          else if(codeArr[i+1]=='n' && codeArr[i+2]=='d' && !(codeArr[i+3]>='a' && codeArr[i+3]<='z') && !(codeArr[i+3]>='A' && codeArr[i+3]<='Z'))
           {
               i = i + 3;
               currToken.ID = endsym;
@@ -298,7 +298,7 @@ void tokenizer(char *codeArr)
           }
         case (int) 'c':
 
-          /*if(codeArr[i+1]=='a'&&codeArr[i+2]=='l' && codeArr[i+3]=='l' && !(codeArr[i+4]>='a' && codeArr[i+4]<='z') && !(codeArr[i+4]>='A'&&codeArr[i+4]<='Z')){
+          if(codeArr[i+1]=='a'&&codeArr[i+2]=='l' && codeArr[i+3]=='l' && !(codeArr[i+4]>='a' && codeArr[i+4]<='z') && !(codeArr[i+4]>='A'&&codeArr[i+4]<='Z')){
 
             i = i + 4;
             currToken.ID = callsym;
@@ -306,7 +306,7 @@ void tokenizer(char *codeArr)
             j++;
             continue;
 
-          }else*/ if(codeArr[i+1] == 'o' && codeArr[i+2] == 'n' && codeArr[i+3] == 's'  && codeArr[i+4] =='t'&& !(codeArr[i+5]>='a' && codeArr[i+5]<='z') && !(codeArr[i+5]>='A'&&codeArr[i+5]<='Z')){
+          }else if(codeArr[i+1] == 'o' && codeArr[i+2] == 'n' && codeArr[i+3] == 's'  && codeArr[i+4] =='t'&& !(codeArr[i+5]>='a' && codeArr[i+5]<='z') && !(codeArr[i+5]>='A'&&codeArr[i+5]<='Z')){
 
             i = i + 5;
             currToken.ID = constsym;
@@ -332,7 +332,7 @@ void tokenizer(char *codeArr)
             j++;
             continue;
           }
-        /*case (int) 'p':
+        case (int) 'p':
 
           if(codeArr[i+1]=='r' &&codeArr[i+2] == 'o' &&codeArr[i+3] == 'c' &&codeArr[i+4] == 'e' &&codeArr[i+5] == 'd' &&codeArr[i+6] == 'u' &&codeArr[i+7] == 'r' &&codeArr[i+8] == 'e' && !(codeArr[i+9]>='a' && codeArr[i+9]<='z') && !(codeArr[i+9]>='A'&&codeArr[i+9]<='Z')){
 
@@ -341,7 +341,7 @@ void tokenizer(char *codeArr)
             tokenStorage[j] = currToken;
             j++;
             continue;
-          }*/
+          }
         case (int) 'r':
 
           if(codeArr[i+1] == 'e' &&codeArr[i+2] == 'a' &&codeArr[i+3] == 'd' && !(codeArr[i+4]>='a' && codeArr[i+4]<='z') && !(codeArr[i+4]>='A'&&codeArr[i+4]<='Z')){
@@ -522,10 +522,10 @@ void tokenizer(char *codeArr)
   tokenStorage[j].ID = 0; //ID 0 signals the end of the struct
 
 }
-int lex()
+int lex(char* filename)
 {
     FILE *fp, *fpw;
-    fp=openFile("input.txt", "r", fp);
+    fp=openFile(filename, "r", fp);
     fpw=openFile("output.txt", "w", fpw);
 
     char *codeArr = calloc(1000, sizeof(char));
